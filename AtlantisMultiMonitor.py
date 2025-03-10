@@ -2,8 +2,8 @@ import os
 import time
 import subprocess
 import psutil
-from pynput import keyboard
 import threading
+from pynput import keyboard
 import win32api  # Requires: pip install pywin32
 
 # Path to MPV
@@ -11,21 +11,47 @@ MPV_PATH = r"C:\Program Files\MPV\mpv.exe"
 
 # Video files
 videos = [
-    {"path": r"C:\Users\YourProfile\Videos\ZPMDiagnostics.mp4"},
-    {"path": r"C:\Users\YourProfile\Videos\AtlantisChairDiag.mp4"},
-    {"path": r"C:\Users\YourProfile\Videos\AtlantisCityScan.mp4"},
-    {"path": r"C:\Users\YourProfile\Videos\AtlantisControlScreen.mp4"},
-    {"path": r"C:\Users\YourProfile\Videos\PegasusStargateDiagnostics.mp4"},
-    {"path": r"C:\Users\YourProfile\Videos\AtlantisScan.mp4"},
-    {"path": r"C:\Users\YourProfile\Videos\AtlantisScreensaver.mp4"}
+    {"path": r"C:\Users\Scott\Onedrive\Videos\ZPMDiagnostics.mp4"},
+    {"path": r"C:\Users\Scott\Onedrive\Videos\AtlantisChairDiag.mp4"},
+    {"path": r"C:\Users\Scott\Onedrive\Videos\AtlantisCityScan.mp4"},
+    {"path": r"C:\Users\Scott\Onedrive\Videos\AtlantisControlScreen.mp4"},
+    {"path": r"C:\Users\Scott\Onedrive\Videos\PegasusStargateDiagnostics.mp4"},
+    {"path": r"C:\Users\Scott\Onedrive\Videos\AtlantisScan.mp4"},
+    {"path": r"C:\Users\Scott\Onedrive\Videos\AtlantisScreensaver.mp4"}
 ]
 
-# Verify paths
-if not os.path.exists(MPV_PATH):
-    raise FileNotFoundError(f"MPV not found at: {MPV_PATH}")
-for video in videos:
-    if not os.path.exists(video["path"]):
-        raise FileNotFoundError(f"Video file not found: {video['path']}")
+# Function to check dependencies
+def check_dependencies():
+    missing_dependencies = []
+    try:
+        import win32api
+        import psutil
+        import pynput
+    except ImportError as e:
+        missing_dependencies.append(str(e).split("'")[1])
+    
+    if missing_dependencies:
+        raise ImportError(f"Missing required dependencies: {', '.join(missing_dependencies)}. Install them with 'pip install pywin32 psutil pynput'")
+
+# Verify MPV existence
+def check_mpv():
+    if not os.path.exists(MPV_PATH):
+        raise FileNotFoundError(f"MPV not found at: {MPV_PATH}. Please install MPV or check the path.")
+
+# Verify video file existence
+def check_videos():
+    missing_videos = [video['path'] for video in videos if not os.path.exists(video['path'])]
+    if missing_videos:
+        raise FileNotFoundError(f"The following video files are missing: {', '.join(missing_videos)}")
+
+# Run checks
+try:
+    check_dependencies()
+    check_mpv()
+    check_videos()
+except Exception as e:
+    print(f"❌ ERROR: {e}")
+    exit(1)
 
 # Global flags
 exit_flag = False
@@ -70,12 +96,12 @@ def start_mpv_instances(videos_list):
                 f'"{MPV_PATH}" "{video["path"]}" '
                 f'--loop-file '
                 f'--fullscreen '
-                f'--fs-screen={screen} '  # Specify fullscreen screen
+                f'--fs-screen={screen} '
                 f'--geometry={bounds["width"]}x{bounds["height"]}+{bounds["left"]}+{bounds["top"]} '
                 f'--no-osc '
                 f'--no-input-default-bindings '
                 f'--no-border '
-                f'--log-file=mpv_log_screen_{screen}.txt'  # Add logging for debugging
+                f'--log-file=mpv_log_screen_{screen}.txt'
             )
             try:
                 proc = subprocess.Popen(command, shell=True)
